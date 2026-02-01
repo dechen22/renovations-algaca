@@ -202,6 +202,12 @@
             font-weight: 600;
             cursor: pointer;
             padding: 12px 16px;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
         }
         
         #categoryFilter:hover {
@@ -276,7 +282,7 @@
             background: #f7fafc;
             padding: 12px;
             text-align: left;
-            font-weight: 500;
+            font-weight: 600;
             color: #4a5568;
             font-size: 13px;
             border-bottom: 2px solid #e2e8f0;
@@ -842,9 +848,12 @@
             document.getElementById('remainingSub').textContent = remaining >= 0 ? 'Budget left' : 'Over budget';
             document.getElementById('progressFill').style.width = Math.min(percentage, 100) + '%';
             
-            // Color coding for remaining
+            // Color coding for remaining and status percent
             const remainingEl = document.getElementById('remaining');
-            remainingEl.style.color = remaining >= 0 ? '#48bb78' : '#f56565';
+            const statusPercentEl = document.getElementById('statusPercent');
+            const color = remaining >= 0 ? '#48bb78' : '#f56565';
+            remainingEl.style.color = color;
+            statusPercentEl.style.color = color;
         }
         
         function updateCategorySelect() {
