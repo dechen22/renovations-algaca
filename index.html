@@ -974,14 +974,37 @@
             });
         }
         
-        // Save to persistent storage (NOT Google Sheets)
+        // Save to Google Sheets
+        async function saveToSheet(action, payment, oldPayment = null) {
+            try {
+                const response = await fetch(SHEETS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        payment: payment,
+                        oldPayment: oldPayment
+                    })
+                });
+                console.log('Synced to Google Sheets:', action);
+                return true;
+            } catch (error) {
+                console.error('Error syncing to Google Sheets:', error);
+                return false;
+            }
+        }
+        
+        // Save to persistent storage (for cross-device sync in Claude.ai)
         async function saveData() {
             try {
                 if (window.storage && typeof window.storage.set === 'function') {
                     await window.storage.set('renovationPayments', JSON.stringify(payments));
                     console.log('Data saved to persistent storage');
                 } else {
-                    console.log('window.storage not available - data only in memory');
+                    console.log('window.storage not available - using Google Sheets only');
                 }
             } catch (error) {
                 console.error('Error saving data:', error);
@@ -1115,7 +1138,7 @@
         
         function deletePayment() {
             if (confirm('Are you sure you want to delete this payment? This cannot be undone.')) {
-                const payment = payments[editingIndex];
+                const payment = {...payments[editingIndex]};
                 
                 // Remove from spent
                 if (budgetData[payment.category]) {
@@ -1124,6 +1147,9 @@
                 
                 // Remove from payments array
                 payments.splice(editingIndex, 1);
+                
+                // Sync to Google Sheets
+                saveToSheet('deletePayment', payment);
                 
                 // Save to storage
                 saveData();
@@ -1156,7 +1182,7 @@
             
             if (editingIndex >= 0) {
                 // Editing existing payment
-                const oldPayment = payments[editingIndex];
+                const oldPayment = {...payments[editingIndex]};
                 
                 // Update spent amounts
                 if (budgetData[oldPayment.category]) {
@@ -1173,6 +1199,10 @@
                         spent: paymentData.amount
                     };
                 }
+                
+                // Sync to Google Sheets
+                await saveToSheet('updatePayment', paymentData, oldPayment);
+                
             } else {
                 // Adding new payment
                 payments.unshift(paymentData);
@@ -1185,6 +1215,9 @@
                         spent: paymentData.amount
                     };
                 }
+                
+                // Sync to Google Sheets
+                await saveToSheet('addPayment', paymentData);
             }
             
             // Save to persistent storage
