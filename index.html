@@ -744,60 +744,81 @@
             // Load payments from sheet
             const sheetPayments = data.payments;
             
-            // Try to load local payments from storage
-            window.storage.get('renovationPayments').then(stored => {
-                let localPayments = [];
-                if (stored && stored.value) {
-                    try {
-                        localPayments = JSON.parse(stored.value);
-                        console.log('Number of local payments:', localPayments.length);
-                    } catch (e) {
-                        console.error('Error parsing local payments:', e);
+            // Check if window.storage is available (only works in Claude.ai)
+            if (window.storage && typeof window.storage.get === 'function') {
+                // Try to load local payments from storage
+                window.storage.get('renovationPayments').then(stored => {
+                    let localPayments = [];
+                    if (stored && stored.value) {
+                        try {
+                            localPayments = JSON.parse(stored.value);
+                            console.log('Number of local payments:', localPayments.length);
+                        } catch (e) {
+                            console.error('Error parsing local payments:', e);
+                        }
                     }
-                }
-                
-                // Merge: sheet payments + local payments (deduplicated)
-                const allPayments = [...sheetPayments];
-                
-                // Add local payments that aren't in the sheet
-                localPayments.forEach(localPayment => {
-                    const exists = sheetPayments.some(sp => 
-                        sp.category === localPayment.category &&
-                        sp.date === localPayment.date &&
-                        sp.amount === localPayment.amount &&
-                        sp.notes === localPayment.notes
-                    );
-                    if (!exists) {
-                        allPayments.push(localPayment);
+                    
+                    // Merge: sheet payments + local payments (deduplicated)
+                    const allPayments = [...sheetPayments];
+                    
+                    // Add local payments that aren't in the sheet
+                    localPayments.forEach(localPayment => {
+                        const exists = sheetPayments.some(sp => 
+                            sp.category === localPayment.category &&
+                            sp.date === localPayment.date &&
+                            sp.amount === localPayment.amount &&
+                            sp.notes === localPayment.notes
+                        );
+                        if (!exists) {
+                            allPayments.push(localPayment);
+                        }
+                    });
+                    
+                    payments = allPayments;
+                    
+                    // Calculate spent amounts from all payments
+                    Object.keys(budgetData).forEach(cat => budgetData[cat].spent = 0);
+                    payments.forEach(payment => {
+                        if (budgetData[payment.category]) {
+                            budgetData[payment.category].spent += payment.amount;
+                        } else {
+                            budgetData[payment.category] = {
+                                planned: 0,
+                                spent: payment.amount
+                            };
+                        }
+                    });
+                    
+                    // Sort payments by date (newest first)
+                    payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    console.log('✓ Total payments after merge:', payments.length);
+                    
+                    if (loadResolve) {
+                        console.log('✓ Data processing complete, updating UI...');
+                        loadResolve();
+                    }
+                }).catch(err => {
+                    console.error('Error loading local storage:', err);
+                    payments = sheetPayments;
+                    
+                    // Calculate spent amounts
+                    Object.keys(budgetData).forEach(cat => budgetData[cat].spent = 0);
+                    payments.forEach(payment => {
+                        if (budgetData[payment.category]) {
+                            budgetData[payment.category].spent += payment.amount;
+                        }
+                    });
+                    
+                    payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    if (loadResolve) {
+                        loadResolve();
                     }
                 });
-                
-                payments = allPayments;
-                
-                // Calculate spent amounts from all payments
-                Object.keys(budgetData).forEach(cat => budgetData[cat].spent = 0);
-                payments.forEach(payment => {
-                    if (budgetData[payment.category]) {
-                        budgetData[payment.category].spent += payment.amount;
-                    } else {
-                        budgetData[payment.category] = {
-                            planned: 0,
-                            spent: payment.amount
-                        };
-                    }
-                });
-                
-                // Sort payments by date (newest first)
-                payments.sort((a, b) => new Date(b.date) - new Date(a.date));
-                
-                console.log('✓ Total payments after merge:', payments.length);
-                
-                if (loadResolve) {
-                    console.log('✓ Data processing complete, updating UI...');
-                    loadResolve();
-                }
-            }).catch(err => {
-                console.error('Error loading local storage:', err);
+            } else {
+                // No window.storage available - just use sheet payments
+                console.log('window.storage not available, using only Google Sheets data');
                 payments = sheetPayments;
                 
                 // Calculate spent amounts
@@ -813,8 +834,76 @@
                 if (loadResolve) {
                     loadResolve();
                 }
-            });
+            }
         };
+        
+        // Load from Google Sheets using JSONP
+        async function loadData() {
+            return new Promise((resolve) => {
+                loadResolve = resolve;
+                
+                console.log('Starting to load data from Google Sheets...');
+                console.log('URL:', SHEETS_URL);
+                
+                const script = document.createElement('script');
+                const callbackParam = 'handleSheetData';
+                const timestamp = new Date().getTime();
+                script.src = SHEETS_URL + '?callback=' + callbackParam + '&t=' + timestamp;
+                
+                console.log('Full URL:', script.src);
+                
+                script.onload = function() {
+                    console.log('✓ Script loaded successfully');
+                };
+                
+                script.onerror = function(e) {
+                    console.error('✗ Script loading failed');
+                    console.error('Error event:', e);
+                    console.log('Using initial/fallback data instead');
+                    
+                    budgetData = JSON.parse(JSON.stringify(initialData.budget));
+                    payments = JSON.parse(JSON.stringify(initialData.payments));
+                    
+                    // Calculate spent amounts from payments
+                    payments.forEach(payment => {
+                        if (budgetData[payment.category]) {
+                            budgetData[payment.category].spent += payment.amount;
+                        } else {
+                            budgetData[payment.category] = {
+                                planned: 0,
+                                spent: payment.amount
+                            };
+                        }
+                    });
+                    
+                    payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    resolve();
+                };
+                
+                console.log('Appending script to document head...');
+                document.head.appendChild(script);
+                
+                // Timeout fallback
+                setTimeout(() => {
+                    if (Object.keys(budgetData).length === 0) {
+                        console.warn('⚠ Timeout (5s) - Google Sheets did not respond');
+                        console.log('Using initial/fallback data instead');
+                        
+                        budgetData = JSON.parse(JSON.stringify(initialData.budget));
+                        payments = JSON.parse(JSON.stringify(initialData.payments));
+                        
+                        payments.forEach(payment => {
+                            if (budgetData[payment.category]) {
+                                budgetData[payment.category].spent += payment.amount;
+                            }
+                        });
+                        
+                        payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        resolve();
+                    }
+                }, 5000);
+            });
+        }
         
         // Load from Google Sheets using JSONP
         async function loadData() {
@@ -887,11 +976,12 @@
         // Save to persistent storage (NOT Google Sheets)
         async function saveData() {
             try {
-                await window.storage.set('renovationData', JSON.stringify({
-                    budget: budgetData,
-                    payments: payments
-                }));
-                console.log('Data saved to persistent storage');
+                if (window.storage && typeof window.storage.set === 'function') {
+                    await window.storage.set('renovationPayments', JSON.stringify(payments));
+                    console.log('Data saved to persistent storage');
+                } else {
+                    console.log('window.storage not available - data only in memory');
+                }
             } catch (error) {
                 console.error('Error saving data:', error);
             }
@@ -1016,11 +1106,9 @@
                 payments.splice(editingIndex, 1);
                 
                 // Save to storage
-                window.storage.set('renovationPayments', JSON.stringify(payments)).then(() => {
-                    console.log('Payment deleted and saved to storage');
-                    closeModal();
-                    updateUI();
-                });
+                saveData();
+                closeModal();
+                updateUI();
             }
         }
         
@@ -1097,8 +1185,7 @@
             }
             
             // Save to persistent storage
-            await window.storage.set('renovationPayments', JSON.stringify(payments));
-            console.log('Payments saved to storage');
+            saveData();
             
             // Reset form and close modal
             this.reset();
