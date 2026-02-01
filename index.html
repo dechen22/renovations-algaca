@@ -607,49 +607,105 @@
         let budgetData = {};
         let payments = [];
         let activeFilter = 'All';
+        let loadResolve;
         
-        // Load from Google Sheets
-        async function loadData() {
-            try {
-                const response = await fetch(SHEETS_URL);
-                const data = await response.json();
-                
-                budgetData = data.budget;
-                payments = data.payments;
-                
-                // Calculate spent amounts from payments
-                Object.keys(budgetData).forEach(cat => budgetData[cat].spent = 0);
-                payments.forEach(payment => {
-                    if (budgetData[payment.category]) {
-                        budgetData[payment.category].spent += payment.amount;
-                    } else {
-                        budgetData[payment.category] = {
-                            planned: 0,
-                            spent: payment.amount
-                        };
-                    }
-                });
-                
-            } catch (error) {
-                console.log('Error loading from Google Sheets, using initial data:', error);
-                budgetData = JSON.parse(JSON.stringify(initialData.budget));
-                payments = JSON.parse(JSON.stringify(initialData.payments));
-                
-                // Calculate spent amounts from payments
-                payments.forEach(payment => {
-                    if (budgetData[payment.category]) {
-                        budgetData[payment.category].spent += payment.amount;
-                    } else {
-                        budgetData[payment.category] = {
-                            planned: 0,
-                            spent: payment.amount
-                        };
-                    }
-                });
-            }
+        // Global callback for JSONP
+        window.handleSheetData = function(data) {
+            console.log('✓ Successfully received data from Google Sheets');
+            console.log('Budget categories:', Object.keys(data.budget));
+            console.log('Number of payments:', data.payments.length);
+            
+            budgetData = data.budget;
+            payments = data.payments;
+            
+            // Calculate spent amounts from payments
+            Object.keys(budgetData).forEach(cat => budgetData[cat].spent = 0);
+            payments.forEach(payment => {
+                if (budgetData[payment.category]) {
+                    budgetData[payment.category].spent += payment.amount;
+                } else {
+                    budgetData[payment.category] = {
+                        planned: 0,
+                        spent: payment.amount
+                    };
+                }
+            });
             
             // Sort payments by date (newest first)
             payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (loadResolve) {
+                console.log('✓ Data processing complete, updating UI...');
+                loadResolve();
+            }
+        };
+        
+        // Load from Google Sheets using JSONP
+        async function loadData() {
+            return new Promise((resolve) => {
+                loadResolve = resolve;
+                
+                console.log('Starting to load data from Google Sheets...');
+                console.log('URL:', SHEETS_URL);
+                
+                const script = document.createElement('script');
+                const callbackParam = 'handleSheetData';
+                const timestamp = new Date().getTime();
+                script.src = SHEETS_URL + '?callback=' + callbackParam + '&t=' + timestamp;
+                
+                console.log('Full URL:', script.src);
+                
+                script.onload = function() {
+                    console.log('✓ Script loaded successfully');
+                };
+                
+                script.onerror = function(e) {
+                    console.error('✗ Script loading failed');
+                    console.error('Error event:', e);
+                    console.log('Using initial/fallback data instead');
+                    
+                    budgetData = JSON.parse(JSON.stringify(initialData.budget));
+                    payments = JSON.parse(JSON.stringify(initialData.payments));
+                    
+                    // Calculate spent amounts from payments
+                    payments.forEach(payment => {
+                        if (budgetData[payment.category]) {
+                            budgetData[payment.category].spent += payment.amount;
+                        } else {
+                            budgetData[payment.category] = {
+                                planned: 0,
+                                spent: payment.amount
+                            };
+                        }
+                    });
+                    
+                    payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    resolve();
+                };
+                
+                console.log('Appending script to document head...');
+                document.head.appendChild(script);
+                
+                // Timeout fallback
+                setTimeout(() => {
+                    if (Object.keys(budgetData).length === 0) {
+                        console.warn('⚠ Timeout (5s) - Google Sheets did not respond');
+                        console.log('Using initial/fallback data instead');
+                        
+                        budgetData = JSON.parse(JSON.stringify(initialData.budget));
+                        payments = JSON.parse(JSON.stringify(initialData.payments));
+                        
+                        payments.forEach(payment => {
+                            if (budgetData[payment.category]) {
+                                budgetData[payment.category].spent += payment.amount;
+                            }
+                        });
+                        
+                        payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        resolve();
+                    }
+                }, 5000);
+            });
         }
         
         // Save to Google Sheets
