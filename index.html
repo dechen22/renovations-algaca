@@ -33,7 +33,7 @@
         
         h1 {
             color: #5a9f7e;
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             margin-bottom: 10px;
         }
         
@@ -98,35 +98,35 @@
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
             margin-bottom: 20px;
         }
         
         .stat-card {
             background: white;
             border-radius: 12px;
-            padding: 24px;
+            padding: 16px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
         .stat-label {
             color: #718096;
-            font-size: 14px;
-            margin-bottom: 8px;
+            font-size: 12px;
+            margin-bottom: 6px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         
         .stat-value {
             color: #2d3748;
-            font-size: 32px;
+            font-size: 24px;
             font-weight: 600;
         }
         
         .stat-sub {
             color: #a0aec0;
-            font-size: 14px;
+            font-size: 12px;
             margin-top: 4px;
         }
         
@@ -145,16 +145,8 @@
         }
         
         .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            display: block;
             margin-bottom: 20px;
-        }
-        
-        @media (max-width: 1024px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
         }
         
         .card {
@@ -279,6 +271,22 @@
             background: #f7fafc;
         }
         
+        .category-table .total-row {
+            background: #5a9f7e;
+            color: white;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .category-table .total-row:hover {
+            background: #5a9f7e;
+        }
+        
+        .category-table .total-row td {
+            border-bottom: none;
+            padding: 14px 12px;
+        }
+        
         .amount {
             font-weight: 500;
         }
@@ -396,6 +404,95 @@
             width: 20px;
             height: 20px;
         }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.3s;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .close {
+            color: #a0aec0;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: #4a5568;
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .add-btn {
+            padding: 10px 20px;
+            background: #5a9f7e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .add-btn:hover {
+            background: #4a8f6e;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -407,46 +504,66 @@
             </div>
         </div>
         
-        <div class="main-content">
-            <div class="card">
-                <h2 class="card-title">
-                    <span style="color: #48bb78; font-weight: bold; font-size: 24px;">+</span> Add New Invoice
-                </h2>
-                
-                <form id="invoiceForm">
-                    <div class="form-group">
-                        <label for="category">Category</label>
-                        <select id="category" required>
-                            <option value="">Select category...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="date">Date</label>
-                        <input type="date" id="date" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="amount">Amount (€)</label>
-                        <input type="number" id="amount" step="0.01" required placeholder="0.00">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="notes">Notes</label>
-                        <textarea id="notes" placeholder="Add description or details..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="receipt">Receipt (optional)</label>
-                        <input type="file" id="receipt" accept="image/*,.pdf">
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">
-                        <span style="color: white;">+</span> Add Payment
-                    </button>
-                </form>
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="add-btn" onclick="openModal()">
+                <span style="color: white; font-weight: bold; font-size: 18px;">+</span> Add New Invoice
+            </button>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title">
+                📊 Budget vs Paid
+            </h2>
+            <div id="categoryBreakdown"></div>
+        </div>
+        
+        <div style="margin-top: 30px;"></div>
+        
+        <!-- Modal -->
+        <div id="invoiceModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><span style="color: #48bb78; font-weight: bold; font-size: 24px;">+</span> Add New Invoice</h2>
+                    <span class="close" onclick="closeModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="invoiceForm">
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" required>
+                                <option value="">Select category...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="date">Date</label>
+                            <input type="date" id="date" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="amount">Amount (€)</label>
+                            <input type="number" id="amount" step="0.01" required placeholder="0.00">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" placeholder="Add description or details..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="receipt">Receipt (optional)</label>
+                            <input type="file" id="receipt" accept="image/*,.pdf">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" style="width: auto; padding: 8px 16px; font-size: 14px;">
+                            Save
+                        </button>
+                    </form>
+                </div>
             </div>
-            
+        </div>
+        
+        <div class="main-content">
             <div class="card">
                 <h2 class="card-title">
                     📋 Payment History
@@ -460,29 +577,9 @@
             </div>
         </div>
         
-        <div class="card">
-            <h2 class="card-title">
-                📊 Budget
-            </h2>
-            <div id="categoryBreakdown"></div>
-        </div>
+        <div style="margin-top: 40px;"></div>
         
         <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Total Budget</div>
-                <div class="stat-value" id="totalBudget">€0</div>
-                <div class="stat-sub">Planned spending</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-label">Total Spent</div>
-                <div class="stat-value" id="totalSpent">€0</div>
-                <div class="stat-sub" id="spentSub">0 payments made</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                </div>
-            </div>
-            
             <div class="stat-card">
                 <div class="stat-label">Remaining</div>
                 <div class="stat-value" id="remaining">€0</div>
@@ -493,26 +590,48 @@
                 <div class="stat-label">Status</div>
                 <div class="stat-value" id="statusPercent">0%</div>
                 <div class="stat-sub">Budget used</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         // Pre-loaded data from Excel file
-        const initialData = {"budget":{"Builder":{"planned":22900,"spent":0},"Carpentry":{"planned":2000,"spent":0},"Digger - Garden":{"planned":2500,"spent":0},"Plumber":{"planned":2500,"spent":0},"Electricity":{"planned":5500,"spent":0},"Rita Salary":{"planned":3500,"spent":0},"Miscellaneous":{"planned":0,"spent":0},"New kitchen":{"planned":4000,"spent":0},"Roof":{"planned":7000,"spent":0}},"payments":[{"category":"Rita Salary","date":"2025-03-21","amount":160,"notes":"Plans","receipt":"https://drive.google.com/file/d/182IO-ALBJrs2eOWawtlo7SiSNnikJKRD/view?usp=drive_link"},{"category":"Rita Salary","date":"2025-05-01","amount":207.8,"notes":"First bill","receipt":"https://drive.google.com/file/d/1e3CHYo5dKUHyykT6aQNZ0JvPbVwAfQul/view?usp=drive_link"},{"category":"Miscellaneous","date":"2025-05-16","amount":35.44,"notes":"Imposto Certidao","receipt":"https://drive.google.com/file/d/1hlvOWI_zRay1_6RBqcORcwyixK_WnkZc/view?usp=drive_link"},{"category":"Rita Salary","date":"2025-07-01","amount":345.2,"notes":"July payment","receipt":""},{"category":"Digger - Garden","date":"2025-09-01","amount":48,"notes":"Trimming (Rita's son)","receipt":""},{"category":"Electricity","date":"2025-10-13","amount":400,"notes":"Generator","receipt":""},{"category":"Plumber","date":"2025-10-24","amount":641.14,"notes":"Materials","receipt":"https://drive.google.com/file/d/1IGujTa-hpPHrog44FUl3Cj8AMVZ8cDJg/view?usp=drive_link"},{"category":"Rita Salary","date":"2025-10-25","amount":480,"notes":"October","receipt":""},{"category":"Rita Salary","date":"2025-10-25","amount":63,"notes":"10 trips X 14 km","receipt":""},{"category":"Builder","date":"2025-10-25","amount":1800,"notes":"3 weeks  Zeca","receipt":""},{"category":"Digger - Garden","date":"2025-10-25","amount":80,"notes":"Prune trees ","receipt":""},{"category":"Electricity","date":"2025-10-25","amount":40.49,"notes":"Fuel Generator","receipt":""},{"category":"Miscellaneous","date":"2025-10-25","amount":28.6,"notes":"Fence ","receipt":""},{"category":"Builder","date":"2025-11-02","amount":480,"notes":"Farley (assist) 6 days","receipt":""},{"category":"Plumber","date":"2025-11-06","amount":477.2,"notes":"Paulo work","receipt":"https://drive.google.com/file/d/16mOUOAxEFKDG1rVB0k8KD4059o8XwNKj/view?usp=drive_link"},{"category":"Digger - Garden","date":"2025-11-24","amount":1660,"notes":"FLN","receipt":"https://drive.google.com/file/d/1hEt38HZcZ5WUJtEReB3uKFkjocr0YOPa/view?usp=drive_link"},{"category":"Builder","date":"2025-12-25","amount":480,"notes":"Zeca  ","receipt":""},{"category":"Builder","date":"2025-12-25","amount":829.92,"notes":"Material Construcao","receipt":"https://drive.google.com/file/d/1a8lVYUc4H7WTDbUqUZrw32y7M5Yabdzh/view?usp=sharing"},{"category":"Builder","date":"2025-12-27","amount":600,"notes":"Zeca  ","receipt":""},{"category":"Builder","date":"2026-01-02","amount":480,"notes":"Zeca  ","receipt":""},{"category":"Builder","date":"2026-01-02","amount":160,"notes":"Farley ","receipt":""},{"category":"Builder","date":"2026-01-04","amount":80,"notes":"Farley","receipt":""},{"category":"Builder","date":"2026-01-09","amount":600,"notes":"Zeca  ","receipt":""},{"category":"Builder","date":"2026-01-09","amount":420,"notes":"Farley","receipt":""},{"category":"Electricity","date":"2026-01-09","amount":64,"notes":"Fuel Generator","receipt":""},{"category":"Electricity","date":"28.12.25","amount":1000,"notes":"Mathew start","receipt":""},{"category":"Builder","date":"2026-01-17","amount":356,"notes":"Material","receipt":""},{"category":"Builder","date":"2026-01-17","amount":600,"notes":"Week Zeca","receipt":""},{"category":"Builder","date":"2026-01-17","amount":19.61,"notes":"Materials for windows surround","receipt":""},{"category":"Builder","date":"2026-01-17","amount":200,"notes":"2.5 Days Farley","receipt":""},{"category":"Rita Salary","date":"2026-01-22","amount":356,"notes":"November","receipt":"https://drive.google.com/file/d/1gZVYPEMYmRDWUgnimdBct04Nn0vUAsDg/view?usp=drive_link"},{"category":"Rita Salary","date":"2026-01-22","amount":561,"notes":"December","receipt":"https://drive.google.com/file/d/1oJ42ix2twiaBxbbNnAakWjcVXB8yL8do/view?usp=drive_link"},{"category":"Builder","date":"2026-01-22","amount":600,"notes":"Zeca Week","receipt":""},{"category":"Builder","date":"2026-01-22","amount":200,"notes":"2.5 days Farley","receipt":""},{"category":"Plumber","date":"2026-01-22","amount":31.32,"notes":"Water Apin","receipt":""}]};
+        const initialData = {"budget":{"Builder":{"planned":22900,"spent":0},"Carpentry":{"planned":2000,"spent":0},"Digger - Garden":{"planned":2500,"spent":0},"Plumber":{"planned":2500,"spent":0},"Electricity":{"planned":8500,"spent":0},"Rita Salary":{"planned":3500,"spent":0},"Miscellaneous":{"planned":4500,"spent":0},"New kitchen":{"planned":4000,"spent":0},"Roof":{"planned":7000,"spent":0}},"payments":[{"category":"Rita Salary","date":"2025-03-21","amount":160,"notes":"Plans","receipt":"https://drive.google.com/file/d/182IO-ALBJrs2eOWawtlo7SiSNnikJKRD/view?usp=drive_link"},{"category":"Rita Salary","date":"2025-05-01","amount":207.8,"notes":"First bill","receipt":"https://drive.google.com/file/d/1e3CHYo5dKUHyykT6aQNZ0JvPbVwAfQul/view?usp=drive_link"},{"category":"Miscellaneous","date":"2025-05-16","amount":35.44,"notes":"Imposto Certidao","receipt":"https://drive.google.com/file/d/1hlvOWI_zRay1_6RBqcORcwyixK_WnkZc/view?usp=drive_link"},{"category":"Rita Salary","date":"2025-07-01","amount":345.2,"notes":"July payment","receipt":""},{"category":"Digger - Garden","date":"2025-09-01","amount":48,"notes":"Trimming (Rita's son)","receipt":""},{"category":"Electricity","date":"2025-10-13","amount":400,"notes":"Generator","receipt":""},{"category":"Plumber","date":"2025-10-24","amount":641.14,"notes":"Materials","receipt":"https://drive.google.com/file/d/1IGujTa-hpPHrog44FUl3Cj8AMVZ8cDJg/view?usp=drive_link"},{"category":"Rita Salary","date":"2025-10-25","amount":480,"notes":"October","receipt":""},{"category":"Rita Salary","date":"2025-10-25","amount":63,"notes":"10 trips X 14 km","receipt":""},{"category":"Builder","date":"2025-10-25","amount":1800,"notes":"3 weeks  Zeca","receipt":""},{"category":"Digger - Garden","date":"2025-10-25","amount":80,"notes":"Prune trees ","receipt":""},{"category":"Electricity","date":"2025-10-25","amount":40.49,"notes":"Fuel Generator","receipt":""},{"category":"Miscellaneous","date":"2025-10-25","amount":28.6,"notes":"Fence ","receipt":""},{"category":"Builder","date":"2025-11-02","amount":480,"notes":"Farley (assist) 6 days","receipt":""},{"category":"Plumber","date":"2025-11-06","amount":477.2,"notes":"Paulo work","receipt":"https://drive.google.com/file/d/16mOUOAxEFKDG1rVB0k8KD4059o8XwNKj/view?usp=drive_link"},{"category":"Digger - Garden","date":"2025-11-24","amount":1660,"notes":"FLN","receipt":"https://drive.google.com/file/d/1hEt38HZcZ5WUJtEReB3uKFkjocr0YOPa/view?usp=drive_link"},{"category":"Builder","date":"2025-12-25","amount":480,"notes":"Zeca  ","receipt":""},{"category":"Builder","date":"2025-12-25","amount":829.92,"notes":"Material Construcao","receipt":"https://drive.google.com/file/d/1a8lVYUc4H7WTDbUqUZrw32y7M5Yabdzh/view?usp=sharing"},{"category":"Builder","date":"2025-12-27","amount":600,"notes":"Zeca  ","receipt":""},{"category":"Builder","date":"2026-01-02","amount":480,"notes":"Zeca  ","receipt":""},{"category":"Builder","date":"2026-01-02","amount":160,"notes":"Farley ","receipt":""},{"category":"Builder","date":"2026-01-04","amount":80,"notes":"Farley","receipt":""},{"category":"Builder","date":"2026-01-09","amount":600,"notes":"Zeca  ","receipt":""},{"category":"Builder","date":"2026-01-09","amount":420,"notes":"Farley","receipt":""},{"category":"Electricity","date":"2026-01-09","amount":64,"notes":"Fuel Generator","receipt":""},{"category":"Electricity","date":"28.12.25","amount":1000,"notes":"Mathew start","receipt":""},{"category":"Builder","date":"2026-01-17","amount":356,"notes":"Material","receipt":""},{"category":"Builder","date":"2026-01-17","amount":600,"notes":"Week Zeca","receipt":""},{"category":"Builder","date":"2026-01-17","amount":19.61,"notes":"Materials for windows surround","receipt":""},{"category":"Builder","date":"2026-01-17","amount":200,"notes":"2.5 Days Farley","receipt":""},{"category":"Rita Salary","date":"2026-01-22","amount":356,"notes":"November","receipt":"https://drive.google.com/file/d/1gZVYPEMYmRDWUgnimdBct04Nn0vUAsDg/view?usp=drive_link"},{"category":"Rita Salary","date":"2026-01-22","amount":561,"notes":"December","receipt":"https://drive.google.com/file/d/1oJ42ix2twiaBxbbNnAakWjcVXB8yL8do/view?usp=drive_link"},{"category":"Builder","date":"2026-01-22","amount":600,"notes":"Zeca Week","receipt":""},{"category":"Builder","date":"2026-01-22","amount":200,"notes":"2.5 days Farley","receipt":""},{"category":"Plumber","date":"2026-01-22","amount":31.32,"notes":"Water Apin","receipt":""}]};
+        
+        // Google Sheets URL
+        const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyhCkq5pqT3iocP6xFN4YPUaI_ToUQwK_lvDB1LScYpJt2AInb3KB5Gk2mOlECdPRvcNg/exec';
         
         let budgetData = {};
         let payments = [];
         let activeFilter = 'All';
         
-        // Load from localStorage or use initial data
-        function loadData() {
-            const saved = localStorage.getItem('renovationData');
-            if (saved) {
-                const data = JSON.parse(saved);
+        // Load from Google Sheets
+        async function loadData() {
+            try {
+                const response = await fetch(SHEETS_URL);
+                const data = await response.json();
+                
                 budgetData = data.budget;
                 payments = data.payments;
-            } else {
+                
+                // Calculate spent amounts from payments
+                Object.keys(budgetData).forEach(cat => budgetData[cat].spent = 0);
+                payments.forEach(payment => {
+                    if (budgetData[payment.category]) {
+                        budgetData[payment.category].spent += payment.amount;
+                    } else {
+                        budgetData[payment.category] = {
+                            planned: 0,
+                            spent: payment.amount
+                        };
+                    }
+                });
+                
+            } catch (error) {
+                console.log('Error loading from Google Sheets, using initial data:', error);
                 budgetData = JSON.parse(JSON.stringify(initialData.budget));
                 payments = JSON.parse(JSON.stringify(initialData.payments));
                 
@@ -533,18 +652,47 @@
             payments.sort((a, b) => new Date(b.date) - new Date(a.date));
         }
         
-        // Save to localStorage
-        function saveData() {
-            localStorage.setItem('renovationData', JSON.stringify({
-                budget: budgetData,
-                payments: payments
-            }));
+        // Save to Google Sheets
+        async function saveData() {
+            try {
+                await fetch(SHEETS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        payments: payments
+                    })
+                });
+                console.log('Data saved to Google Sheets');
+            } catch (error) {
+                console.error('Error saving to Google Sheets:', error);
+            }
         }
         
         // Initialize
-        loadData();
-        document.getElementById('date').valueAsDate = new Date();
-        updateUI();
+        loadData().then(() => {
+            document.getElementById('date').valueAsDate = new Date();
+            updateUI();
+        });
+        
+        // Modal functions
+        function openModal() {
+            document.getElementById('invoiceModal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('invoiceModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('invoiceModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
         
         // Invoice form submission
         document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
@@ -589,9 +737,10 @@
             // Save to localStorage
             saveData();
             
-            // Reset form
+            // Reset form and close modal
             this.reset();
             document.getElementById('date').valueAsDate = new Date();
+            closeModal();
             
             updateUI();
         });
@@ -610,12 +759,9 @@
             const remaining = totalBudget - totalSpent;
             const percentage = totalBudget > 0 ? (totalSpent / totalBudget * 100) : 0;
             
-            document.getElementById('totalBudget').textContent = '€' + totalBudget.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-            document.getElementById('totalSpent').textContent = '€' + totalSpent.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
             document.getElementById('remaining').textContent = '€' + remaining.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
             document.getElementById('statusPercent').textContent = percentage.toFixed(1) + '%';
             
-            document.getElementById('spentSub').textContent = payments.length + ' payments made';
             document.getElementById('remainingSub').textContent = remaining >= 0 ? 'Budget left' : 'Over budget';
             document.getElementById('progressFill').style.width = Math.min(percentage, 100) + '%';
             
@@ -660,30 +806,65 @@
         function updateCategoryBreakdown() {
             const container = document.getElementById('categoryBreakdown');
             
-            let html = '<table class="category-table"><thead><tr><th>Category</th><th>Planned</th><th>Spent</th><th>Status</th></tr></thead><tbody>';
+            // Define the desired order
+            const categoryOrder = [
+                'Rita Salary',
+                'Plumber',
+                'Digger - Garden',
+                'Miscellaneous',
+                'Builder',
+                'Carpentry',
+                'Electricity',
+                'New kitchen',
+                'Roof'
+            ];
             
-            Object.entries(budgetData).forEach(([category, data]) => {
-                const remaining = data.planned - data.spent;
-                const percentage = data.planned > 0 ? (data.spent / data.planned * 100) : 0;
-                let badge = '';
-                
-                if (percentage < 80) {
-                    badge = '<span class="badge badge-success">On track</span>';
-                } else if (percentage < 100) {
-                    badge = '<span class="badge badge-warning">Near limit</span>';
-                } else {
-                    badge = '<span class="badge badge-danger">Over budget</span>';
+            let html = '<table class="category-table"><thead><tr><th>Category</th><th>Budget</th><th>Paid</th></tr></thead><tbody>';
+            
+            let totalPlanned = 0;
+            let totalSpent = 0;
+            
+            // Display categories in the specified order
+            categoryOrder.forEach(category => {
+                if (budgetData[category]) {
+                    const data = budgetData[category];
+                    totalPlanned += data.planned;
+                    totalSpent += data.spent;
+                    
+                    html += `
+                        <tr>
+                            <td style="font-weight: 600;">${category}</td>
+                            <td class="amount">€${data.planned.toLocaleString()}</td>
+                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${data.spent.toLocaleString()}</td>
+                        </tr>
+                    `;
                 }
-                
-                html += `
-                    <tr>
-                        <td>${category}</td>
-                        <td class="amount">€${data.planned.toLocaleString()}</td>
-                        <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${data.spent.toLocaleString()}</td>
-                        <td>${badge}</td>
-                    </tr>
-                `;
             });
+            
+            // Add any categories not in the order list (in case new ones are added)
+            Object.entries(budgetData).forEach(([category, data]) => {
+                if (!categoryOrder.includes(category)) {
+                    totalPlanned += data.planned;
+                    totalSpent += data.spent;
+                    
+                    html += `
+                        <tr>
+                            <td style="font-weight: 600;">${category}</td>
+                            <td class="amount">€${data.planned.toLocaleString()}</td>
+                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${data.spent.toLocaleString()}</td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            // Add total row
+            html += `
+                <tr class="total-row">
+                    <td>Total</td>
+                    <td>€${totalPlanned.toLocaleString()}</td>
+                    <td>€${totalSpent.toLocaleString()}</td>
+                </tr>
+            `;
             
             html += '</tbody></table>';
             container.innerHTML = html;
