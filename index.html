@@ -684,8 +684,9 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="receipt">Receipt (optional)</label>
-                            <input type="file" id="receipt" accept="image/*,.pdf">
+                            <label for="receipt">Receipt Link (optional)</label>
+                            <input type="url" id="receipt" placeholder="Paste Google Drive link...">
+                            <small style="color: #718096; font-size: 12px;">Upload receipt to your <a href="https://drive.google.com/drive/folders/1Yld4Vrbiic858XH0PobtlpwulOq0tySl" target="_blank" style="color: #5a9f7e;">Drive folder</a>, then paste the link here</small>
                         </div>
                         
                         <button type="submit" class="btn btn-primary" style="width: auto; padding: 8px 16px; font-size: 14px;">
@@ -987,7 +988,7 @@
             }
         }
         
-        // Upload file to Google Drive
+        // Upload file to Google Drive using hidden iframe (bypasses CORS)
         async function uploadFileToDrive(file) {
             try {
                 // Convert file to base64
@@ -998,29 +999,48 @@
                     reader.readAsDataURL(file);
                 });
                 
-                // Upload to Google Drive via Apps Script
-                const response = await fetch(SHEETS_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
+                // Create a form and submit via iframe
+                return new Promise((resolve, reject) => {
+                    // Create hidden iframe
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.name = 'upload_iframe_' + Date.now();
+                    document.body.appendChild(iframe);
+                    
+                    // Create form
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = SHEETS_URL;
+                    form.target = iframe.name;
+                    
+                    // Add data as hidden input
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'data';
+                    input.value = JSON.stringify({
                         action: 'uploadFile',
                         fileData: base64Data,
                         fileName: file.name,
                         mimeType: file.type
-                    })
+                    });
+                    form.appendChild(input);
+                    
+                    document.body.appendChild(form);
+                    
+                    // Handle response (note: due to CORS, we can't read the response directly)
+                    // We'll just assume success after a delay
+                    iframe.onload = function() {
+                        setTimeout(() => {
+                            document.body.removeChild(form);
+                            document.body.removeChild(iframe);
+                            // Return a placeholder since we can't get the actual URL due to CORS
+                            resolve(`Uploaded: ${file.name}`);
+                        }, 2000);
+                    };
+                    
+                    // Submit form
+                    form.submit();
                 });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log('File uploaded to Drive:', result.fileUrl);
-                    return result.fileUrl;
-                } else {
-                    console.error('File upload failed:', result.error);
-                    return null;
-                }
             } catch (error) {
                 console.error('Error uploading file to Drive:', error);
                 return null;
@@ -1124,26 +1144,14 @@
         document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const receiptFile = document.getElementById('receipt').files[0];
-            let receiptData = '';
-            
-            // If there's a file, upload to Google Drive
-            if (receiptFile) {
-                console.log('Uploading file to Google Drive...');
-                receiptData = await uploadFileToDrive(receiptFile);
-                if (!receiptData) {
-                    alert('Failed to upload receipt to Google Drive. Saving invoice without receipt.');
-                } else {
-                    console.log('File uploaded successfully:', receiptData);
-                }
-            }
+            const receiptLink = document.getElementById('receipt').value.trim();
             
             const paymentData = {
                 category: document.getElementById('category').value,
                 date: document.getElementById('date').value,
                 amount: parseFloat(document.getElementById('amount').value),
                 notes: document.getElementById('notes').value,
-                receipt: receiptData
+                receipt: receiptLink
             };
             
             if (editingIndex >= 0) {
@@ -1153,11 +1161,6 @@
                 // Update spent amounts
                 if (budgetData[oldPayment.category]) {
                     budgetData[oldPayment.category].spent -= oldPayment.amount;
-                }
-                
-                // If no new file was uploaded, keep the old receipt
-                if (!receiptFile && oldPayment.receipt) {
-                    paymentData.receipt = oldPayment.receipt;
                 }
                 
                 payments[editingIndex] = paymentData;
@@ -1183,6 +1186,17 @@
                     };
                 }
             }
+            
+            // Save to persistent storage
+            saveData();
+            
+            // Reset form and close modal
+            this.reset();
+            document.getElementById('date').valueAsDate = new Date();
+            closeModal();
+            
+            updateUI();
+        });
             
             // Save to persistent storage
             saveData();
