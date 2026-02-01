@@ -156,6 +156,13 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
+        @media (max-width: 768px) {
+            .card {
+                padding: 16px;
+                border-radius: 8px;
+            }
+        }
+        
         .card-title {
             font-size: 20px;
             font-weight: 600;
@@ -249,6 +256,20 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
+            table-layout: fixed;
+        }
+        
+        .category-table th,
+        .category-table td {
+            word-wrap: break-word;
+        }
+        
+        @media (max-width: 768px) {
+            .category-table th,
+            .category-table td {
+                font-size: 13px;
+                padding: 10px 6px;
+            }
         }
         
         .category-table th {
@@ -891,7 +912,7 @@
                         <tr>
                             <td style="font-weight: 600;">${category}</td>
                             <td class="amount">€${data.planned.toLocaleString()}</td>
-                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${data.spent.toLocaleString()}</td>
+                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${data.spent.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
                         </tr>
                     `;
                 }
@@ -907,7 +928,7 @@
                         <tr>
                             <td style="font-weight: 600;">${category}</td>
                             <td class="amount">€${data.planned.toLocaleString()}</td>
-                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${data.spent.toLocaleString()}</td>
+                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${data.spent.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
                         </tr>
                     `;
                 }
@@ -918,7 +939,7 @@
                 <tr class="total-row">
                     <td>Total</td>
                     <td>€${totalPlanned.toLocaleString()}</td>
-                    <td>€${totalSpent.toLocaleString()}</td>
+                    <td>€${totalSpent.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
                 </tr>
             `;
             
