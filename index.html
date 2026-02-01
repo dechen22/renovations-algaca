@@ -1055,17 +1055,46 @@
         
         function updateCategoryFilters() {
             const select = document.getElementById('categoryFilter');
-            const categories = Object.keys(budgetData).sort();
+            
+            // Use the same order as the budget table
+            const categoryOrder = [
+                'Rita Salary',
+                'Plumber',
+                'Digger - Garden',
+                'Miscellaneous',
+                'Builder',
+                'Carpentry',
+                'Electricity',
+                'New kitchen',
+                'Roof'
+            ];
             
             select.innerHTML = '<option value="All">All Categories</option>';
-            categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
-                if (category === activeFilter) {
-                    option.selected = true;
+            
+            // Add categories in the specified order
+            categoryOrder.forEach(category => {
+                if (budgetData[category]) {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    if (category === activeFilter) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
                 }
-                select.appendChild(option);
+            });
+            
+            // Add any additional categories not in the order list
+            Object.keys(budgetData).sort().forEach(category => {
+                if (!categoryOrder.includes(category)) {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    if (category === activeFilter) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
             });
         }
         
