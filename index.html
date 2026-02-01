@@ -148,8 +148,16 @@
         }
         
         .main-content {
-            display: block;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
             margin-bottom: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
         }
         
         .card {
@@ -621,11 +629,25 @@
             </button>
         </div>
         
-        <div class="card">
-            <h2 class="card-title">
-                📊 Budget vs Paid
-            </h2>
-            <div id="categoryBreakdown"></div>
+        <div class="main-content">
+            <div class="card">
+                <h2 class="card-title">
+                    📊 Budget vs Paid
+                </h2>
+                <div id="categoryBreakdown"></div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title">
+                    📋 Payment History
+                </h2>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <select id="categoryFilter" onchange="setFilter(this.value)">
+                        <option value="All">All Categories</option>
+                    </select>
+                </div>
+                <div class="payment-list" id="paymentList"></div>
+            </div>
         </div>
         
         <div style="margin-top: 30px;"></div>
@@ -677,20 +699,6 @@
             </div>
         </div>
         
-        <div class="main-content">
-            <div class="card">
-                <h2 class="card-title">
-                    📋 Payment History
-                </h2>
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <select id="categoryFilter" onchange="setFilter(this.value)">
-                        <option value="All">All Categories</option>
-                    </select>
-                </div>
-                <div class="payment-list" id="paymentList"></div>
-            </div>
-        </div>
-        
         <div style="margin-top: 40px;"></div>
         
         <div class="stats-grid">
@@ -728,31 +736,84 @@
         window.handleSheetData = function(data) {
             console.log('✓ Successfully received data from Google Sheets');
             console.log('Budget categories:', Object.keys(data.budget));
-            console.log('Number of payments:', data.payments.length);
+            console.log('Number of payments from sheet:', data.payments.length);
             
+            // Load budget from sheets (always use sheet budget)
             budgetData = data.budget;
-            payments = data.payments;
             
-            // Calculate spent amounts from payments
-            Object.keys(budgetData).forEach(cat => budgetData[cat].spent = 0);
-            payments.forEach(payment => {
-                if (budgetData[payment.category]) {
-                    budgetData[payment.category].spent += payment.amount;
-                } else {
-                    budgetData[payment.category] = {
-                        planned: 0,
-                        spent: payment.amount
-                    };
+            // Load payments from sheet
+            const sheetPayments = data.payments;
+            
+            // Try to load local payments from storage
+            window.storage.get('renovationPayments').then(stored => {
+                let localPayments = [];
+                if (stored && stored.value) {
+                    try {
+                        localPayments = JSON.parse(stored.value);
+                        console.log('Number of local payments:', localPayments.length);
+                    } catch (e) {
+                        console.error('Error parsing local payments:', e);
+                    }
+                }
+                
+                // Merge: sheet payments + local payments (deduplicated)
+                const allPayments = [...sheetPayments];
+                
+                // Add local payments that aren't in the sheet
+                localPayments.forEach(localPayment => {
+                    const exists = sheetPayments.some(sp => 
+                        sp.category === localPayment.category &&
+                        sp.date === localPayment.date &&
+                        sp.amount === localPayment.amount &&
+                        sp.notes === localPayment.notes
+                    );
+                    if (!exists) {
+                        allPayments.push(localPayment);
+                    }
+                });
+                
+                payments = allPayments;
+                
+                // Calculate spent amounts from all payments
+                Object.keys(budgetData).forEach(cat => budgetData[cat].spent = 0);
+                payments.forEach(payment => {
+                    if (budgetData[payment.category]) {
+                        budgetData[payment.category].spent += payment.amount;
+                    } else {
+                        budgetData[payment.category] = {
+                            planned: 0,
+                            spent: payment.amount
+                        };
+                    }
+                });
+                
+                // Sort payments by date (newest first)
+                payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                console.log('✓ Total payments after merge:', payments.length);
+                
+                if (loadResolve) {
+                    console.log('✓ Data processing complete, updating UI...');
+                    loadResolve();
+                }
+            }).catch(err => {
+                console.error('Error loading local storage:', err);
+                payments = sheetPayments;
+                
+                // Calculate spent amounts
+                Object.keys(budgetData).forEach(cat => budgetData[cat].spent = 0);
+                payments.forEach(payment => {
+                    if (budgetData[payment.category]) {
+                        budgetData[payment.category].spent += payment.amount;
+                    }
+                });
+                
+                payments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                if (loadResolve) {
+                    loadResolve();
                 }
             });
-            
-            // Sort payments by date (newest first)
-            payments.sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            if (loadResolve) {
-                console.log('✓ Data processing complete, updating UI...');
-                loadResolve();
-            }
         };
         
         // Load from Google Sheets using JSONP
@@ -823,22 +884,56 @@
             });
         }
         
-        // Save to Google Sheets
+        // Save to persistent storage (NOT Google Sheets)
         async function saveData() {
             try {
-                await fetch(SHEETS_URL, {
+                await window.storage.set('renovationData', JSON.stringify({
+                    budget: budgetData,
+                    payments: payments
+                }));
+                console.log('Data saved to persistent storage');
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+        
+        // Upload file to Google Drive
+        async function uploadFileToDrive(file) {
+            try {
+                // Convert file to base64
+                const base64Data = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                
+                // Upload to Google Drive via Apps Script
+                const response = await fetch(SHEETS_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        payments: payments
+                        action: 'uploadFile',
+                        fileData: base64Data,
+                        fileName: file.name,
+                        mimeType: file.type
                     })
                 });
-                console.log('Data saved to Google Sheets');
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('File uploaded to Drive:', result.fileUrl);
+                    return result.fileUrl;
+                } else {
+                    console.error('File upload failed:', result.error);
+                    return null;
+                }
             } catch (error) {
-                console.error('Error saving to Google Sheets:', error);
+                console.error('Error uploading file to Drive:', error);
+                return null;
             }
         }
         
@@ -920,10 +1015,12 @@
                 // Remove from payments array
                 payments.splice(editingIndex, 1);
                 
-                // Save and update
-                saveData();
-                closeModal();
-                updateUI();
+                // Save to storage
+                window.storage.set('renovationPayments', JSON.stringify(payments)).then(() => {
+                    console.log('Payment deleted and saved to storage');
+                    closeModal();
+                    updateUI();
+                });
             }
         }
         
@@ -942,18 +1039,15 @@
             const receiptFile = document.getElementById('receipt').files[0];
             let receiptData = '';
             
-            // If there's a file, convert to base64
+            // If there's a file, upload to Google Drive
             if (receiptFile) {
-                receiptData = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve({
-                        name: receiptFile.name,
-                        type: receiptFile.type,
-                        data: e.target.result
-                    });
-                    reader.onerror = reject;
-                    reader.readAsDataURL(receiptFile);
-                });
+                console.log('Uploading file to Google Drive...');
+                receiptData = await uploadFileToDrive(receiptFile);
+                if (!receiptData) {
+                    alert('Failed to upload receipt to Google Drive. Saving invoice without receipt.');
+                } else {
+                    console.log('File uploaded successfully:', receiptData);
+                }
             }
             
             const paymentData = {
@@ -1002,8 +1096,9 @@
                 }
             }
             
-            // Save to localStorage
-            saveData();
+            // Save to persistent storage
+            await window.storage.set('renovationPayments', JSON.stringify(payments));
+            console.log('Payments saved to storage');
             
             // Reset form and close modal
             this.reset();
@@ -1185,15 +1280,12 @@
                 const date = new Date(payment.date);
                 const formattedDate = date.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'});
                 
-                // Handle receipt - could be uploaded file or link
+                // Handle receipt - Drive links
                 let receiptHtml = '';
                 if (payment.receipt) {
-                    if (typeof payment.receipt === 'object' && payment.receipt.data) {
-                        // It's an uploaded file
-                        receiptHtml = `<a href="${payment.receipt.data}" download="${payment.receipt.name}" class="receipt-link">📎 ${payment.receipt.name}</a>`;
-                    } else if (typeof payment.receipt === 'string' && payment.receipt.startsWith('http')) {
-                        // It's a link (old data)
-                        receiptHtml = `<a href="${payment.receipt}" target="_blank" class="receipt-link">📎 View Receipt</a>`;
+                    if (typeof payment.receipt === 'string' && payment.receipt.startsWith('http')) {
+                        // It's a Google Drive link
+                        receiptHtml = `<a href="${payment.receipt}" target="_blank" class="receipt-link" onclick="event.stopPropagation();">📎 View Receipt</a>`;
                     }
                 }
                 
