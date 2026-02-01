@@ -29,18 +29,15 @@
             padding: 12px 20px;
             margin-bottom: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        @media (max-width: 768px) {
-            .header {
-                padding: 10px 16px;
-            }
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         h1 {
             color: #5a9f7e;
             font-size: 1.25rem;
-            margin-bottom: 10px;
+            margin-bottom: 0;
         }
         
         .subtitle {
@@ -828,7 +825,24 @@
             const payment = payments[index];
             
             document.getElementById('category').value = payment.category;
-            document.getElementById('date').value = payment.date;
+            
+            // Ensure date is in YYYY-MM-DD format for the input field
+            let dateValue = payment.date;
+            if (dateValue) {
+                // If it's already in correct format (YYYY-MM-DD), use it
+                // Otherwise try to parse and format it
+                if (dateValue.includes('/') || dateValue.includes('.')) {
+                    const date = new Date(dateValue);
+                    if (!isNaN(date)) {
+                        dateValue = date.toISOString().split('T')[0];
+                    }
+                } else if (dateValue.length === 10 && dateValue.includes('-')) {
+                    // Already in YYYY-MM-DD format
+                    dateValue = dateValue;
+                }
+            }
+            document.getElementById('date').value = dateValue;
+            
             document.getElementById('amount').value = payment.amount;
             document.getElementById('notes').value = payment.notes || '';
             
@@ -1042,7 +1056,7 @@
                         <tr>
                             <td style="font-weight: 600;">${category}</td>
                             <td class="amount">€${data.planned.toLocaleString()}</td>
-                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${data.spent.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
+                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${Math.round(data.spent).toLocaleString()}</td>
                         </tr>
                     `;
                 }
@@ -1058,7 +1072,7 @@
                         <tr>
                             <td style="font-weight: 600;">${category}</td>
                             <td class="amount">€${data.planned.toLocaleString()}</td>
-                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${data.spent.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
+                            <td class="amount ${data.spent > 0 ? 'negative' : ''}">€${Math.round(data.spent).toLocaleString()}</td>
                         </tr>
                     `;
                 }
@@ -1069,7 +1083,7 @@
                 <tr class="total-row">
                     <td>Total</td>
                     <td>€${totalPlanned.toLocaleString()}</td>
-                    <td>€${totalSpent.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
+                    <td>€${Math.round(totalSpent).toLocaleString()}</td>
                 </tr>
             `;
             
