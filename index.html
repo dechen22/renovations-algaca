@@ -290,11 +290,36 @@
             word-wrap: break-word;
         }
         
+        .category-table th:first-child,
+        .category-table td:first-child {
+            width: 50%;
+        }
+        
+        .category-table th:nth-child(2),
+        .category-table td:nth-child(2),
+        .category-table th:nth-child(3),
+        .category-table td:nth-child(3) {
+            width: 25%;
+            text-align: right;
+        }
+        
         @media (max-width: 768px) {
             .category-table th,
             .category-table td {
                 font-size: 13px;
                 padding: 10px 6px;
+            }
+            
+            .category-table th:first-child,
+            .category-table td:first-child {
+                width: 45%;
+            }
+            
+            .category-table th:nth-child(2),
+            .category-table td:nth-child(2),
+            .category-table th:nth-child(3),
+            .category-table td:nth-child(3) {
+                width: 27.5%;
             }
         }
         
@@ -551,6 +576,12 @@
             transform: translateY(-2px);
         }
         
+        @media (max-width: 768px) {
+            .add-new-invoice-container {
+                margin: 15px 0 !important;
+            }
+        }
+        
         .delete-btn {
             padding: 10px 20px;
             background: #f56565;
@@ -578,7 +609,7 @@
             </div>
         </div>
         
-        <div style="text-align: center; margin: 30px 0;">
+        <div class="add-new-invoice-container" style="text-align: center; margin: 30px 0;">
             <button class="add-btn" onclick="openModal()">
                 <span style="color: white; font-weight: bold; font-size: 18px;">+</span> Add New Invoice
             </button>
