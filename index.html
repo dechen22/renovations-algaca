@@ -826,23 +826,36 @@
             
             document.getElementById('category').value = payment.category;
             
-            // Ensure date is in YYYY-MM-DD format for the input field
-            let dateValue = payment.date;
-            if (dateValue) {
-                // If it's already in correct format (YYYY-MM-DD), use it
-                // Otherwise try to parse and format it
-                if (dateValue.includes('/') || dateValue.includes('.')) {
-                    const date = new Date(dateValue);
-                    if (!isNaN(date)) {
-                        dateValue = date.toISOString().split('T')[0];
+            // Handle date formatting - need YYYY-MM-DD for input[type="date"]
+            let dateValue = '';
+            if (payment.date) {
+                try {
+                    // Try to parse the date
+                    let parsedDate;
+                    
+                    // Check if it's already in YYYY-MM-DD format
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(payment.date)) {
+                        dateValue = payment.date;
+                    } else {
+                        // Try to parse as a date object
+                        parsedDate = new Date(payment.date);
+                        
+                        // Check if valid date
+                        if (!isNaN(parsedDate.getTime())) {
+                            // Format as YYYY-MM-DD
+                            const year = parsedDate.getFullYear();
+                            const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                            const day = String(parsedDate.getDate()).padStart(2, '0');
+                            dateValue = `${year}-${month}-${day}`;
+                        }
                     }
-                } else if (dateValue.length === 10 && dateValue.includes('-')) {
-                    // Already in YYYY-MM-DD format
-                    dateValue = dateValue;
+                } catch (e) {
+                    console.error('Error parsing date:', e);
+                    dateValue = '';
                 }
             }
-            document.getElementById('date').value = dateValue;
             
+            document.getElementById('date').value = dateValue;
             document.getElementById('amount').value = payment.amount;
             document.getElementById('notes').value = payment.notes || '';
             
